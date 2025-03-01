@@ -39,6 +39,12 @@ miyao = "miyao.cli:cli"
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
+[dependency-groups]
+lint = [
+    "mypy>=1.15.0",
+    "ruff>=0.9.9",
+]
+
 [tool.hatch.version]
 path = "src/miyao/__init__.py"
 
@@ -64,8 +70,3 @@ force-single-line = true
 [tool.ruff.format]
 docstring-code-format = true
 
-[dependency-groups]
-lint = [
-    "mypy>=1.15.0",
-    "ruff>=0.9.9",
-]
