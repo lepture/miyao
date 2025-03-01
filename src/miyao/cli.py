@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import cast
 
 import click
 from joserfc.errors import DecodeError
+from joserfc.jwk import OctKey
 
-from ._config import Config
+from ._config import UserConfig
 from ._vault import Algorithms
 from ._vault import decrypt
 from ._vault import encrypt
@@ -16,7 +18,7 @@ from ._vault import encrypt
 @click.option("--algorithm", type=str, help="The algorithm to use.")
 @click.pass_context
 def cli(ctx: click.Context, key: str | None = None, algorithm: Algorithms | None = None):
-    config = Config()
+    config = UserConfig()
     if key:
         config.raw_key = key
     if algorithm:
@@ -27,7 +29,7 @@ def cli(ctx: click.Context, key: str | None = None, algorithm: Algorithms | None
 @cli.command()
 @click.argument("filename", type=click.Path())
 @click.pass_obj
-def create(config: Config, filename: str):
+def create(config: UserConfig, filename: str):
     file_path = Path(filename)
     if file_path.exists():
         click.echo(f'File "{file_path}" already exists.', err=True)
@@ -36,44 +38,47 @@ def create(config: Config, filename: str):
     if config.raw_key is None:
         config.raw_key = click.prompt("Enter a key", type=str, hide_input=True)
 
-    value = encrypt("", config.key, config.algorithm, config.encryption)
+    key = cast(OctKey, config.key)
+    value = encrypt("", key, config.algorithm, config.encryption)
     file_path.write_text(value)
 
 
 @cli.command()
 @click.argument("filename", type=click.Path(exists=True))
 @click.pass_obj
-def edit(config: Config, filename: str):
+def edit(config: UserConfig, filename: str):
     if config.raw_key is None:
         config.raw_key = click.prompt("Enter a key", type=str, hide_input=True)
 
+    key = cast(OctKey, config.key)
     file_path = Path(filename)
     content = file_path.read_bytes()
     try:
-        value = decrypt(content, config.key)
+        value = decrypt(content, key)
     except DecodeError as err:
         click.echo("Incorrect key", err=True)
         raise click.Abort() from err
 
-    message = click.edit(value)
-    value = encrypt(message, config.key, config.algorithm, config.encryption)
-    file_path.write_text(value)
+    message = cast(bytes, click.edit(value))
+    text = encrypt(message, key, config.algorithm, config.encryption)
+    file_path.write_text(text)
 
 
 @cli.command()
 @click.argument("filename", type=click.Path(exists=True))
 @click.pass_obj
-def view(config: Config, filename: str):
+def view(config: UserConfig, filename: str):
     if config.raw_key is None:
         config.raw_key = click.prompt("Enter a key", type=str, hide_input=True)
 
+    key = cast(OctKey, config.key)
     file_path = Path(filename)
     try:
-        content = decrypt(file_path.read_bytes(), config.key)
+        content = decrypt(file_path.read_bytes(), key)
     except DecodeError as err:
         click.echo("Incorrect key", err=True)
         raise click.Abort() from err
 
-    click.echo("-----------------")
+    click.echo("\n-----------------")
     click.echo(content)
     click.echo("-----------------")

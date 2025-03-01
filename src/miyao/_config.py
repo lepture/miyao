@@ -8,8 +8,12 @@ from ._vault import Algorithms
 from ._vault import Encryptions
 from ._vault import import_key
 
+__all__ = [
+    "UserConfig",
+]
 
-class Config:
+
+class UserConfig:
     raw_key: str | None = None
     algorithm: Algorithms = DEFAULT_ALGORITHM
     encryption: Encryptions = DEFAULT_ENCRYPTION
