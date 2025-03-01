@@ -8,7 +8,7 @@ from joserfc.errors import DecodeError
 from joserfc.jwk import OctKey
 
 from ._config import UserConfig
-from ._vault import Algorithms
+from ._vault import AlgorithmTypes
 from ._vault import decrypt
 from ._vault import encrypt
 
@@ -17,8 +17,8 @@ from ._vault import encrypt
 @click.option("-k", "--key", type=str, help="A key to encrypt the content.")
 @click.option("--algorithm", type=str, help="The algorithm to use.")
 @click.pass_context
-def cli(ctx: click.Context, key: str | None = None, algorithm: Algorithms | None = None):
-    config = UserConfig()
+def cli(ctx: click.Context, key: str | None = None, algorithm: AlgorithmTypes | None = None):
+    config = UserConfig.create()
     if key:
         config.raw_key = key
     if algorithm:
@@ -59,7 +59,10 @@ def edit(config: UserConfig, filename: str):
         click.echo("Incorrect key", err=True)
         raise click.Abort() from err
 
-    message = cast(bytes, click.edit(value))
+    message = click.edit(value)
+    if message is None:
+        return
+
     text = encrypt(message, key, config.algorithm, config.encryption)
     file_path.write_text(text)
 

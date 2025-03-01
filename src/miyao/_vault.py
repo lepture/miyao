@@ -7,24 +7,30 @@ from joserfc.jwe import encrypt_compact
 from joserfc.jwk import OctKey
 from joserfc.util import to_str
 
-Algorithms = t.Literal["A128KW", "A256KW"]
-Encryptions = t.Literal["A128GCM", "A192KW", "A256GCM"]
-DEFAULT_ALGORITHM: Algorithms = "A128KW"
-DEFAULT_ENCRYPTION: Encryptions = "A128GCM"
+AlgorithmTypes = t.Literal["A128KW", "A256KW"]
+EncryptionTypes = t.Literal["A128GCM", "A192KW", "A256GCM"]
+DEFAULT_ALGORITHM: AlgorithmTypes = "A128KW"
+DEFAULT_ENCRYPTION: EncryptionTypes = "A128GCM"
 
 
 def encrypt(
     content: bytes | str,
     key: OctKey,
-    algorithm: Algorithms = DEFAULT_ALGORITHM,
-    encryption: Encryptions = DEFAULT_ENCRYPTION,
+    algorithm: AlgorithmTypes = DEFAULT_ALGORITHM,
+    encryption: EncryptionTypes = DEFAULT_ENCRYPTION,
 ) -> str:
     protected = {"alg": algorithm, "enc": encryption}
     return encrypt_compact(protected, content, key)
 
 
 def decrypt(content: bytes | str, key: OctKey) -> bytes:
-    """Decrypt the given content into key value pairs. The ``content``
+    obj = decrypt_compact(content, key)
+    assert isinstance(obj.plaintext, bytes)
+    return obj.plaintext
+
+
+def parse_content(content: bytes) -> dict[str, str]:
+    """Parsing the given content into key value pairs. The ``content``
     should be bytes or str in the bellow syntax::
 
         key_1: value - 1
@@ -33,16 +39,9 @@ def decrypt(content: bytes | str, key: OctKey) -> bytes:
         # use # for commenting
         key_3: value - 3
 
-    :param content: bytes or str
-    :param key: OctKey
+    :param content: content in bytes
     :return: dict[str, str]
     """
-    obj = decrypt_compact(content, key)
-    assert isinstance(obj.plaintext, bytes)
-    return obj.plaintext
-
-
-def parse_content(content: bytes) -> dict[str, str]:
     text = to_str(content)
 
     rv: dict[str, str] = {}
@@ -57,7 +56,7 @@ def parse_content(content: bytes) -> dict[str, str]:
     return rv
 
 
-def import_key(key: str, algorithm: Algorithms) -> OctKey:
+def import_key(key: str, algorithm: AlgorithmTypes) -> OctKey:
     if algorithm == "A128KW":
         key_bit_size = 128
     else:
