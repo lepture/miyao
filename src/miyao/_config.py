@@ -15,6 +15,7 @@ from ._vault import parse_content
 
 __all__ = [
     "UserConfig",
+    "read_config",
     "parse_config",
 ]
 
@@ -46,13 +47,18 @@ class UserConfig:
         return obj
 
 
-def parse_config(filename: str, key: str, algorithm: AlgorithmTypes = DEFAULT_ALGORITHM) -> dict[str, str]:
+def read_config(filename: str, key: str, algorithm: AlgorithmTypes = DEFAULT_ALGORITHM) -> bytes | None:
     file_path = Path(filename)
     if file_path.exists():
         _key = import_key(key, algorithm)
         with open(file_path) as f:
             decrypted = decrypt(f.read(), _key)
-            data = parse_content(decrypted)
-    else:
-        data = {}
-    return data
+            return decrypted
+    return None
+
+
+def parse_config(filename: str, key: str, algorithm: AlgorithmTypes = DEFAULT_ALGORITHM) -> dict[str, str]:
+    text = read_config(filename, key, algorithm)
+    if text is not None:
+        return parse_content(text)
+    return {}
